@@ -3,14 +3,16 @@
 #include <ESP8266HTTPClient.h>
 #include <WiFiClient.h>
 #include <ArduinoJson.h>
-#include "../include/RestClient.h"
+#include "../include/RestClient.hpp"
 
-const char * ssid = "<enter_ssid>";
-const char * password = "<enter_password>";
+const char *ssid = "<ssid>";
+const char *password = "<password>";
 
-RestClient * client;
+RestClient *client;
 
-String url = "http://postman-echo.com/get?fuck=1";
+String getUrl = "http://postman-echo.com/get?fuck=1";
+String postUrl = "http://postman-echo.com/post";
+String putUrl = "http://postman-echo.com/put";
 
 unsigned long lastTime = 0;
 
@@ -20,35 +22,10 @@ DynamicJsonDocument doc(1024);
 
 #define LED_BUILDIN 2
 
-String httpGETRequest(String serverName) {
+void httpPOSTRequest(String serverName)
+{
   HTTPClient http;
-    
-  // Your IP address with path or Domain name with URL path 
-  http.begin(serverName);
-  
-  // Send HTTP POST request
-  int httpResponseCode = http.GET();
-  
-  String payload = "{}"; 
-  
-  if (httpResponseCode>0) {
-    Serial.print("HTTP Response code: ");
-    Serial.println(httpResponseCode);
-    payload = http.getString();
-  }
-  else {
-    Serial.print("Error code: ");
-    Serial.println(httpResponseCode);
-  }
-  // Free resources
-  http.end();
 
-  return payload;
-}
-
-void httpPOSTRequest(String serverName) {
-  HTTPClient http;
-  
   http.begin(serverName);
   http.addHeader("Content-Type", "application/json");
   doc["hello"] = "world";
@@ -56,25 +33,27 @@ void httpPOSTRequest(String serverName) {
   serializeJson(doc, json);
 
   int httpResponseCode = http.POST(json);
-  if (httpResponseCode>0) {
+  if (httpResponseCode > 0)
+  {
     Serial.print("HTTP Response code: ");
     Serial.println(http.getString());
   }
-  else {
+  else
+  {
     Serial.print("Error code: ");
     Serial.println(httpResponseCode);
   }
-
 }
 
-
-void setup() {
+void setup()
+{
   // put your setup code here, to run once:
   Serial.begin(9600);
-  pinMode(LED_BUILTIN, OUTPUT);     // Initialize the LED_BUILTIN pin as an output
+  pinMode(LED_BUILTIN, OUTPUT); // Initialize the LED_BUILTIN pin as an output
   WiFi.begin(ssid, password);
   Serial.println("connecting");
-  while (WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED)
+  {
     delay(500);
     Serial.print("fuck");
   }
@@ -85,10 +64,13 @@ void setup() {
 }
 
 // the loop function runs over and over again forever
-void loop() {
+void loop()
+{
 
-  if ((millis() - lastTime) > timerDelay) {
-    if (WiFi.status() == WL_CONNECTED) {
+  if ((millis() - lastTime) > timerDelay)
+  {
+    if (WiFi.status() == WL_CONNECTED)
+    {
       // String response = httpGETRequest(url);
       // deserializeJson(doc, response);
       // JsonObject obj = doc.as<JsonObject>();
@@ -98,14 +80,22 @@ void loop() {
       DynamicJsonDocument headers(1024);
       headers["Content-Type"] = "application/json";
       DynamicJsonDocument response(1024);
-      response = client->get(url, headers.as<JsonObject>());
+      response = client->get(getUrl, headers);
       String lol;
       serializeJson(response, lol);
       Serial.println(lol);
-    } else {
+      DynamicJsonDocument payload(1024);
+      payload["fuck"] = "this shit";
+      response = client->post(postUrl, payload);
+      client->put(putUrl, payload);
+
+      serializeJson(response, lol);
+      Serial.println(lol);
+    }
+    else
+    {
       Serial.println("WiFi Disconnected");
     }
     lastTime = millis();
   }
 }
-
